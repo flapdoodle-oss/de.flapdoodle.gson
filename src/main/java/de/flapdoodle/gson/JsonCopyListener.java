@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2016
+ *   Michael Mosmann <michael@mosmann.de>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.flapdoodle.gson;
 
 import java.util.ArrayDeque;
@@ -27,40 +43,13 @@ public class JsonCopyListener implements TreeListener {
                 case OBJECT:
                 case ARRAY:
                     final JsonElement container = createContainer(elementType);
-                    switch ( stackElementType ) {
-                        case OBJECT:
-                            current
-                                    .getAsJsonObject()
-                                    .add(((JsonPath.Key) path).name(), container);
-                            stack.push(container);
-                            break;
-                        case ARRAY:
-                            current
-                                    .getAsJsonArray()
-                                    .add(container);
-                            stack.push(container);
-                            break;
-                        default:
-                            throw new IllegalArgumentException("not supported: " + stackElementType);
-                    }
+                    addElementToContainer(path, current, stackElementType, container);
+                    stack.push(container);
                     break;
                 case PRIMITIVE:
                 case NULL:
                     final JsonElement copy = jsonElement.deepCopy();
-                    switch ( stackElementType ) {
-                        case OBJECT:
-                            current
-                                    .getAsJsonObject()
-                                    .add(((JsonPath.Key) path).name(), copy);
-                            break;
-                        case ARRAY:
-                            current
-                                    .getAsJsonArray()
-                                    .add(copy);
-                            break;
-                        default:
-                            throw new IllegalArgumentException("not supported: " + stackElementType);
-                    }
+                    addElementToContainer(path, current, stackElementType, copy);
 
             }
         }
@@ -68,8 +57,22 @@ public class JsonCopyListener implements TreeListener {
         return JsonVisitResult.CONTINUE;
     }
 
-    private static boolean isValue(final ElementType elementType) {
-        return elementType == ElementType.NULL || elementType == ElementType.PRIMITIVE;
+    private void addElementToContainer(final JsonPath path, final JsonElement current, final ElementType stackElementType,
+                                       final JsonElement container) {
+        switch ( stackElementType ) {
+            case OBJECT:
+                current
+                        .getAsJsonObject()
+                        .add(((JsonPath.Key) path).name(), container);
+                break;
+            case ARRAY:
+                current
+                        .getAsJsonArray()
+                        .add(container);
+                break;
+            default:
+                throw new IllegalArgumentException("can not add to " + stackElementType);
+        }
     }
 
     private static JsonElement createContainer(ElementType elementType) {
@@ -88,7 +91,8 @@ public class JsonCopyListener implements TreeListener {
         switch ( elementType ) {
             case ARRAY:
             case OBJECT:
-                stack.pop();
+                final JsonElement copy = stack.pop();
+                onInspectionDone(path, elementType, copy);
                 break;
         }
 
@@ -97,5 +101,9 @@ public class JsonCopyListener implements TreeListener {
                 throw new IllegalStateException("stack is not empty: " + stack);
             }
         }
+    }
+
+    public void onInspectionDone(final JsonPath path, final ElementType elementType, final JsonElement copy) {
+
     }
 }
