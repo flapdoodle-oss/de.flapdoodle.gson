@@ -1,0 +1,12 @@
+{
+  "key": "value",
+  "stuff": {
+    "name": "Michael",
+    "age": 2,
+    "flag": false
+  },
+  "array": [1,2,{
+    "type": "complex",
+    "also array": ["1",2,false]
+  }]
+}
