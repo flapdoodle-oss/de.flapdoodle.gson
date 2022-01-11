@@ -21,10 +21,21 @@ import java.util.Deque;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-public class JsonCopyListener implements TreeListener {
-    private JsonElement copyRoot;
+public final class InspectAfterCopyListener implements TreeListener {
+    private final Deque<JsonElement> stack = new ArrayDeque<>();
 
-    private Deque<JsonElement> stack = new ArrayDeque<>();
+    private JsonElement copyRoot = null;
+
+    private Listener listener;
+
+    public InspectAfterCopyListener(Listener listener) {
+        this.listener = listener;
+    }
+
+    public InspectAfterCopyListener() {
+        this((path, elementType, copy) -> {
+        });
+    }
 
     public JsonElement copy() {
         return copyRoot;
@@ -57,8 +68,11 @@ public class JsonCopyListener implements TreeListener {
         return JsonVisitResult.CONTINUE;
     }
 
-    private void addElementToContainer(final JsonPath path, final JsonElement current, final ElementType stackElementType,
-                                       final JsonElement container) {
+    private void addElementToContainer(
+            final JsonPath path,
+            final JsonElement current,
+            final ElementType stackElementType,
+            final JsonElement container) {
         switch ( stackElementType ) {
             case OBJECT:
                 current
@@ -92,7 +106,7 @@ public class JsonCopyListener implements TreeListener {
             case ARRAY:
             case OBJECT:
                 final JsonElement copy = stack.pop();
-                onInspectionDone(path, elementType, copy);
+                listener.onInspectionDone(path, elementType, copy);
                 break;
         }
 
@@ -103,7 +117,8 @@ public class JsonCopyListener implements TreeListener {
         }
     }
 
-    public void onInspectionDone(final JsonPath path, final ElementType elementType, final JsonElement copy) {
-
+    @FunctionalInterface
+    public interface Listener {
+        void onInspectionDone(final JsonPath path, final ElementType elementType, final JsonElement copy);
     }
 }

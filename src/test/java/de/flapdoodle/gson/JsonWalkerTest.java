@@ -19,9 +19,7 @@ package de.flapdoodle.gson;
 import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
@@ -31,6 +29,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import de.flapdoodle.gson.InspectAfterCopyListener.Listener;
 class JsonWalkerTest {
     private static final Gson TEST_GSON = new GsonBuilder()
             .setPrettyPrinting()
@@ -67,7 +66,7 @@ class JsonWalkerTest {
     public void copySampleJson() {
         final JsonElement source = json("sample.json");
 
-        final JsonCopyListener copyListener = new JsonCopyListener();
+        final InspectAfterCopyListener copyListener = new InspectAfterCopyListener();
         JsonWalker.walk(source, copyListener);
         final JsonElement copy = copyListener.copy();
 
@@ -91,26 +90,19 @@ class JsonWalkerTest {
                 .indexBetween(0, 100)
                 .match("also array");
 
-        final JsonCopyListener copyListener = new JsonCopyListener() {
-            @Override
-            public void onInspectionDone(final JsonPath path, final ElementType elementType, final JsonElement copy) {
-                if (stuffMatcher.matches(path)) {
-                    final JsonObject object = copy.getAsJsonObject();
-                    object.addProperty("name","Peter");
-                    object.addProperty("age", object.getAsJsonPrimitive("age").getAsInt()+1);
-                    object.addProperty("flag", true);
-                }
-
-                if (matchAlsoArraySomewhere.matches(path)) {
-                    final JsonArray array = copy.getAsJsonArray();
-                    array.set(2, new JsonPrimitive(true));
-                }
-//                if (path.equals(JsonPath.root().add("array").add(2).add("also array"))) {
-//                    final JsonArray array = copy.getAsJsonArray();
-//                    array.set(2, new JsonPrimitive(true));
-//                }
+        final InspectAfterCopyListener copyListener = new InspectAfterCopyListener((path, elementType, copy) -> {
+            if (stuffMatcher.matches(path)) {
+                final JsonObject object = copy.getAsJsonObject();
+                object.addProperty("name","Peter");
+                object.addProperty("age", object.getAsJsonPrimitive("age").getAsInt()+1);
+                object.addProperty("flag", true);
             }
-        };
+
+            if (matchAlsoArraySomewhere.matches(path)) {
+                final JsonArray array = copy.getAsJsonArray();
+                array.set(2, new JsonPrimitive(true));
+            }
+        });
 
         JsonWalker.walk(source, copyListener);
         final JsonElement copy = copyListener.copy();

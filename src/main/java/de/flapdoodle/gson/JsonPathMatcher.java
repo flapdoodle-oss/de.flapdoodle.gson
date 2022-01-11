@@ -20,15 +20,15 @@ import java.util.regex.Pattern;
 public abstract class JsonPathMatcher {
 
     public final JsonPathMatcher indexBetween(int min, int max) {
-        return new JsonPathMatcher.Index(this, min, max);
+        return new MatchIndex(this, min, max);
     }
 
     public final JsonPathMatcher match(Pattern pattern) {
-        return new JsonPathMatcher.Key(this, pattern);
+        return new MatchKey(this, pattern);
     }
 
     public final JsonPathMatcher match(String key) {
-        return new JsonPathMatcher.Key(this, Pattern.compile(Pattern.quote(key)));
+        return new MatchKey(this, Pattern.compile(Pattern.quote(key)));
     }
 
     public abstract boolean matches(JsonPath path);
@@ -49,14 +49,14 @@ public abstract class JsonPathMatcher {
         }
     }
 
-    public static class Index extends JsonPathMatcher {
+    public static class MatchIndex extends JsonPathMatcher {
         private final JsonPathMatcher parent;
 
         private final int min;
 
         private final int max;
 
-        public Index(JsonPathMatcher parent, int min, int max) {
+        public MatchIndex(JsonPathMatcher parent, int min, int max) {
             this.parent = parent;
             this.min = min;
             this.max = max;
@@ -78,12 +78,12 @@ public abstract class JsonPathMatcher {
         }
     }
 
-    public static class Key extends JsonPathMatcher {
+    public static class MatchKey extends JsonPathMatcher {
         private final JsonPathMatcher parent;
 
         private Pattern pattern;
 
-        public Key(final JsonPathMatcher parent, final Pattern pattern) {
+        public MatchKey(final JsonPathMatcher parent, final Pattern pattern) {
             this.parent = parent;
             this.pattern = pattern;
         }
